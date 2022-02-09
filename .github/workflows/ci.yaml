@@ -43,6 +43,6 @@ jobs:
           git bisect good
           git checkout f202464d6fca71019e94b2a1bc7547dbb77b9466
           git bisect bad
-          python3 -c "import os;print(os.listdir())"
-          cat test.py
-          git bisect run test.py
+          python3 -c "import os;print(os.listdir('venv2'))"
+          cat venv2/test.py
+          git bisect run venv2/test.py
