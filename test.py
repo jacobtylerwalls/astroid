@@ -3,7 +3,7 @@ with open('venv2/test.py', 'w+') as f:
 
 from pylint.lint import Run
 
-Run(["test.py", "--disable=all", "--enable=unused-import"])
+Run(["venv2/test.py", "--disable=all", "--enable=unused-import"])
 
 import os
 os.remove('venv2/test.py')
