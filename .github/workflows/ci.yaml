@@ -36,6 +36,9 @@ jobs:
           which python
           python -c "import distutils.util; print(distutils.util)"
           python -m pip install pylint==2.12.2
-          pylint --version
-          pylint venv/test.py
-
+          python -m pip install -e .
+          git bisect start
+          git bisect bad
+          git checkout v2.9.0
+          git bisect good
+          git bisect run pylint venv/test.py --disable=all --enable=import-module
