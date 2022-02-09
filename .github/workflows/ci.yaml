@@ -422,4 +422,8 @@ jobs:
           python -m pip install -e .
           echo "import distutils.util  # pylint: disable=unused-import" > test.py
           cat test.py
-          pylint test.py
+          git bisect start
+          git bisect bad
+          git checkout v2.9.0
+          git bisect good
+          git bisect run pylint test.py
