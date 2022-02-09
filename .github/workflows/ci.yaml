@@ -40,6 +40,6 @@ jobs:
           pylint --version
           git bisect start
           git bisect bad
-          git checkout d0775d5fd293c97e17f7583c0640ebf2fa4478d2
+          git checkout v2.9.0
           git bisect good
-          git bisect run pylint venv/test.py --disable=all --enable=import-module
+          git bisect run pylint venv/test.py --disable=all --enable=unused-import
