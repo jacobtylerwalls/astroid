@@ -38,9 +38,10 @@ jobs:
           python -m pip install -e .
           pylint --version
           git bisect start
-          git bisect bad
           git checkout v2.9.0
           pylint venv2/test.py --disable=all --enable=unused-import
           git bisect good
-          echo """python -c \"with open('venv2/test.py', 'w+') as f:  f.write('import distutils.util')\"; pylint venv2/test.py --disable=all --enable=unused-import; python -c \"import os; os.remove('venv2/test.py')\"""" > test.sh
-          git bisect run test.sh
+          git checkout wip3
+          git bisect bad
+          cat test.py
+          git bisect run test.py
