@@ -13,6 +13,8 @@
 # Copyright (c) 2019 Hugo van Kemenade <hugovk@users.noreply.github.com>
 # Copyright (c) 2020-2021 hippo91 <guillaume.peillex@gmail.com>
 # Copyright (c) 2021 Pierre Sassoulas <pierre.sassoulas@gmail.com>
+# Copyright (c) 2021 Tushar Sadhwani <86737547+tushar-deepsource@users.noreply.github.com>
+# Copyright (c) 2021 Kian Meng, Ang <kianmeng.ang@gmail.com>
 # Copyright (c) 2021 Daniël van Noord <13665637+DanielNoord@users.noreply.github.com>
 # Copyright (c) 2021 Marc Mueller <30130371+cdce8p@users.noreply.github.com>
 # Copyright (c) 2021 Andrew Haigh <hello@nelf.in>
@@ -285,7 +287,7 @@ class BuilderTest(unittest.TestCase):
 
     def test_missing_file(self) -> None:
         with self.assertRaises(AstroidBuildingError):
-            resources.build_file("data/inexistant.py")
+            resources.build_file("data/inexistent.py")
 
     def test_inspect_build0(self) -> None:
         """test astroid tree build from a living object"""
@@ -609,14 +611,14 @@ class FileBuildTest(unittest.TestCase):
         self.assertEqual(module.fromlineno, 0)
         self.assertIsNone(module.parent)
         self.assertEqual(module.frame(), module)
+        self.assertEqual(module.frame(future=True), module)
         self.assertEqual(module.root(), module)
         self.assertEqual(module.file, os.path.abspath(resources.find("data/module.py")))
         self.assertEqual(module.pure_python, 1)
         self.assertEqual(module.package, 0)
         self.assertFalse(module.is_statement)
-        self.assertEqual(module.statement(), module)
         with pytest.warns(DeprecationWarning) as records:
-            module.statement()
+            self.assertEqual(module.statement(), module)
             assert len(records) == 1
         with self.assertRaises(StatementMissing):
             module.statement(future=True)
@@ -652,6 +654,8 @@ class FileBuildTest(unittest.TestCase):
         self.assertTrue(function.parent)
         self.assertEqual(function.frame(), function)
         self.assertEqual(function.parent.frame(), module)
+        self.assertEqual(function.frame(future=True), function)
+        self.assertEqual(function.parent.frame(future=True), module)
         self.assertEqual(function.root(), module)
         self.assertEqual([n.name for n in function.args.args], ["key", "val"])
         self.assertEqual(function.type, "function")
@@ -673,6 +677,8 @@ class FileBuildTest(unittest.TestCase):
         self.assertTrue(klass.parent)
         self.assertEqual(klass.frame(), klass)
         self.assertEqual(klass.parent.frame(), module)
+        self.assertEqual(klass.frame(future=True), klass)
+        self.assertEqual(klass.parent.frame(future=True), module)
         self.assertEqual(klass.root(), module)
         self.assertEqual(klass.basenames, [])
         self.assertTrue(klass.newstyle)
