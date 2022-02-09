@@ -398,7 +398,7 @@ jobs:
           . venv/bin/activate
           pytest tests/
 
-  extra-special-test-case:
+  very-extra-special-test-case:
     name: Test case that requires specific virtualenv
     runs-on: windows-latest
     timeout-minutes: 5
