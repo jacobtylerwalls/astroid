@@ -418,8 +418,8 @@ jobs:
           python -m virtualenv venv2
           . venv2\scripts\activate
           which python
-          python -m pip install git+https://github.com/pycqa/pylint.git
-          python -m pip install git+https://github.com/pycqa/astroid.git@0d1211558670cfefd95b39984b8d5f7f34837f32
+          python -m pip install pylint==2.12.2
+          python -m pip install -e .
           echo "import distutils.util  # pylint: disable=unused-import" > test.py
           cat test.py
           pylint test.py
