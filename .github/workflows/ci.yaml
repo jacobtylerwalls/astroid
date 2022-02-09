@@ -418,4 +418,5 @@ jobs:
           python -m pip install -e .
           echo "import distutils.util  # pylint: disable=unused-import" > test.py
           cat test.py
+          pylint --version
           pylint test.py
