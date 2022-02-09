@@ -38,6 +38,7 @@ jobs:
           git status
       - name: run test case
         run: |
+          which python
           python -m pip install pylint==2.12.2
           pylint --version
           pylint venv/test.py
