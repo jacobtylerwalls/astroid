@@ -33,6 +33,7 @@ jobs:
           python -m pip install virtualenv==15.1.0
           python -m virtualenv venv
           . venv\scripts\activate
+          which python
           python -c "import distutils.util; print(distutils.util)"
       - name: run test case
         run: |
