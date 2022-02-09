@@ -163,14 +163,14 @@ class ImportlibFinder(Finder):
             ]
         # We already import distutils elsewhere in astroid,
         # so if it is the same module, we can use it directly.
-        assert False, (spec.name, spec.location, distutils.__path__)
-        # elif spec.name == "distutils" and spec.location in distutils.__path__:
-        #     # distutils is patched inside virtualenvs to pick up submodules
-        #     # from the original Python, not from the virtualenv itself.
-        #     path = list(distutils.__path__)
-        # else:
-        #     path = [spec.location]
-        # return path
+        elif spec.name == "distutils":
+            # distutils is patched inside virtualenvs to pick up submodules
+            # from the original Python, not from the virtualenv itself.
+            path = list(distutils.__path__)
+            print(path)
+        else:
+            path = [spec.location]
+        return path
 
 
 class ExplicitNamespacePackageFinder(ImportlibFinder):
