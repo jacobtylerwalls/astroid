@@ -41,7 +41,8 @@ jobs:
           git checkout v2.9.0
           pylint venv2/test.py --disable=all --enable=unused-import
           git bisect good
-          git checkout wip3
+          git checkout f202464d6fca71019e94b2a1bc7547dbb77b9466
           git bisect bad
+          python3 -c "import os;print(os.listdir())"
           cat test.py
           git bisect run test.py
