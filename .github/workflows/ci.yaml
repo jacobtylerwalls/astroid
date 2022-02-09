@@ -32,5 +32,5 @@ jobs:
         run: |
           python -m pip install virtualenv==15.1.0
           python -m virtualenv venv
-          . venv/bin/activate
+          . venv\scripts\activate
           python -c "import distutils.util; print(distutils.util)"
