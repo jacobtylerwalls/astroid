@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-python@v2.2.1
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
-      - name: Create Python virtual environment
+      - name: Create venv and run test case
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           python -m pip install virtualenv==15.1.0
@@ -35,10 +35,6 @@ jobs:
           . venv\scripts\activate
           which python
           python -c "import distutils.util; print(distutils.util)"
-          git status
-      - name: run test case
-        run: |
-          which python
           python -m pip install pylint==2.12.2
           pylint --version
           pylint venv/test.py
