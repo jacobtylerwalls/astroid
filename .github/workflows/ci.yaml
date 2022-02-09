@@ -36,5 +36,4 @@ jobs:
           python -c "import distutils.util; print(distutils.util)"
           python -m pip install git+https://github.com/PyCQA/pylint.git
           python -m pip install -e .
-          git revert 51f552cecd15569cb651337fa7f8f9e27eeec579
           pylint test.py
