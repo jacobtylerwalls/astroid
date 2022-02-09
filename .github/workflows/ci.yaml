@@ -35,8 +35,9 @@ jobs:
           . venv\scripts\activate
           which python
           python -c "import distutils.util; print(distutils.util)"
-          python -m pip install pylint==2.12.2
+          python -m pip install git+https://github.com/PyCQA/pylint.git
           python -m pip install -e .
+          pylint --version
           git bisect start
           git bisect bad
           git checkout v2.9.0
