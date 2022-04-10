@@ -57,4 +57,5 @@ jobs:
           pip install -e .
       - name: Run brain_qt tests
         run: |
+          . venv/bin/activate
           pytest tests/unittest_brain_qt.py
