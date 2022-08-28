@@ -11,6 +11,7 @@ from importlib._bootstrap_external import _NamespacePath
 from importlib.util import _find_spec_from_path  # type: ignore[attr-defined]
 
 from astroid.const import IS_PYPY
+from astroid.interpreter._import.spec import _is_setuptools_namespace
 
 
 @lru_cache(maxsize=4096)
@@ -38,9 +39,16 @@ def is_namespace(modname: str) -> bool:
         except ValueError:
             if modname == "__main__":
                 return False
+            if IS_PYPY:
+                if not last_submodule_search_locations:
+                    return False
+                # Slower check for setuptools (old-style) namespace packages
+                return _is_setuptools_namespace(
+                    pathlib.Path(last_submodule_search_locations[0])
+                )
             try:
-                # .pth files will be on sys.modules
-                return sys.modules[modname].__spec__ is None and not IS_PYPY
+                # Faster heuristic for setuptools namespace packages (.pth files)
+                return sys.modules[modname].__spec__ is None
             except KeyError:
                 return False
             except AttributeError:

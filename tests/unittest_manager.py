@@ -10,11 +10,9 @@ import unittest
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-import pytest
-
 import astroid
 from astroid import manager, test_utils
-from astroid.const import IS_JYTHON, IS_PYPY
+from astroid.const import IS_JYTHON
 from astroid.exceptions import AstroidBuildingError, AstroidImportError
 from astroid.interpreter._import import util
 from astroid.modutils import is_standard_module
@@ -158,10 +156,6 @@ class AstroidManagerTest(
             for _ in range(2):
                 sys.path.pop(0)
 
-    @pytest.mark.skipif(
-        IS_PYPY,
-        reason="PyPy provides no way to tell apart frozen stdlib from old-style namespace packages",
-    )
     def test_namespace_package_pth_support(self) -> None:
         pth = "foogle_fax-0.12.5-py2.7-nspkg.pth"
         site.addpackage(resources.RESOURCE_PATH, pth, [])
@@ -176,10 +170,6 @@ class AstroidManagerTest(
         finally:
             sys.modules.pop("foogle")
 
-    @pytest.mark.skipif(
-        IS_PYPY,
-        reason="PyPy provides no way to tell apart frozen stdlib from old-style namespace packages",
-    )
     def test_nested_namespace_import(self) -> None:
         pth = "foogle_fax-0.12.5-py2.7-nspkg.pth"
         site.addpackage(resources.RESOURCE_PATH, pth, [])
