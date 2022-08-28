@@ -11,11 +11,12 @@ from importlib._bootstrap_external import _NamespacePath
 from importlib.util import _find_spec_from_path  # type: ignore[attr-defined]
 
 from astroid.const import IS_PYPY
-from astroid.interpreter._import.spec import _is_setuptools_namespace
 
 
 @lru_cache(maxsize=4096)
 def is_namespace(modname: str) -> bool:
+    from astroid.interpreter._import.spec import _is_setuptools_namespace
+
     if modname in sys.builtin_module_names:
         return False
 
