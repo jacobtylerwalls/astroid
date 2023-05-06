@@ -15,7 +15,7 @@ from astroid.nodes import NodeNG
 from astroid.typing import InferenceResult, InferFn, InferFnExplicit, InferFnTransform
 
 _cache: dict[
-    tuple[InferFn, NodeNG, InferenceContext | None], list[InferenceResult]
+    tuple[InferFn, NodeNG, InferenceContext | None], Iterator[InferenceResult]
 ] = {}
 
 _CURRENTLY_INFERRING: set[tuple[InferFn, NodeNG]] = set()
@@ -35,14 +35,14 @@ def _inference_tip_cached(
         node: NodeNG,
         context: InferenceContext | None,
         **kwargs: Any,
-    ) -> Iterator[InferenceResult] | list[InferenceResult]:
+    ) -> Iterator[InferenceResult]:
         partial_cache_key = (func, node)
         if partial_cache_key in _CURRENTLY_INFERRING:
             # If through recursion we end up trying to infer the same
             # func + node we raise here.
             raise UseInferenceDefault
         try:
-            return _cache[func, node, context]
+            return iter(_cache[func, node, context])
         except KeyError:
             # Recursion guard with a partial cache key.
             # Using the full key causes a recursion error on PyPy.
@@ -50,7 +50,7 @@ def _inference_tip_cached(
             # with slightly different contexts while still passing the simple
             # test cases included with this commit.
             _CURRENTLY_INFERRING.add(partial_cache_key)
-            result = _cache[func, node, context] = list(func(node, context, **kwargs))
+            result = _cache[func, node, context] = func(node, context, **kwargs)
             # Remove recursion guard.
             _CURRENTLY_INFERRING.remove(partial_cache_key)
 

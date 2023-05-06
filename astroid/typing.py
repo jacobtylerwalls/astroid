@@ -78,6 +78,6 @@ InferBinaryOp = Callable[
 InferFn = Callable[[_NodesT, Optional["InferenceContext"]], Iterator[InferenceResult]]
 InferFnExplicit = Callable[
     [_NodesT, Optional["InferenceContext"]],
-    Union[Iterator[InferenceResult], List[InferenceResult]],
+    Iterator[InferenceResult],
 ]
 InferFnTransform = Callable[[_NodesT, InferFn], _NodesT]
