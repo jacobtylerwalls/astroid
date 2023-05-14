@@ -6402,7 +6402,7 @@ def test_property_inference() -> None:
     ) = extract_node(code)
 
     inferred = next(prop.infer())
-    assert isinstance(inferred, objects.Property)
+    assert isinstance(inferred, nodes.Property)
     assert inferred.pytype() == "builtins.property"
     assert inferred.type == "property"
 
@@ -6434,7 +6434,7 @@ def test_property_as_string() -> None:
     """
     node = extract_node(code)
     inferred = next(node.infer())
-    assert isinstance(inferred, objects.Property)
+    assert isinstance(inferred, nodes.Property)
     property_body = textwrap.dedent(
         """
     @property
@@ -6482,7 +6482,7 @@ def test_property_docstring() -> None:
     """
     node = extract_node(code)
     inferred = next(node.infer())
-    assert isinstance(inferred, objects.Property)
+    assert isinstance(inferred, nodes.Property)
     assert isinstance(inferred.doc_node, nodes.Const)
     assert inferred.doc_node.value == "Docstring"
 

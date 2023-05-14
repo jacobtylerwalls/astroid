@@ -618,7 +618,7 @@ def infer_callable(node, context: InferenceContext | None = None):
 
 def infer_property(
     node: nodes.Call, context: InferenceContext | None = None
-) -> objects.Property:
+) -> nodes.Property:
     """Understand `property` class.
 
     This only infers the output of `property`
@@ -637,7 +637,7 @@ def infer_property(
     if not isinstance(inferred, (nodes.FunctionDef, nodes.Lambda)):
         raise UseInferenceDefault
 
-    prop_func = objects.Property(
+    prop_func = nodes.Property(
         function=inferred,
         name=inferred.name,
         lineno=node.lineno,

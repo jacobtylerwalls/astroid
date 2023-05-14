@@ -74,7 +74,7 @@ def _transform_lru_cache(node, context: InferenceContext | None = None) -> None:
 
 def _functools_partial_inference(
     node: nodes.Call, context: InferenceContext | None = None
-) -> Iterator[objects.PartialFunction]:
+) -> Iterator[nodes.PartialFunction]:
     call = arguments.CallSite.from_call(node, context=context)
     number_of_positional = len(call.positional_arguments)
     if number_of_positional < 1:
@@ -110,7 +110,7 @@ def _functools_partial_inference(
     if set(call.keyword_arguments) - parameter_names:
         raise UseInferenceDefault("wrapped function received unknown parameters")
 
-    partial_function = objects.PartialFunction(
+    partial_function = nodes.PartialFunction(
         call,
         name=inferred_wrapped_function.name,
         lineno=inferred_wrapped_function.lineno,

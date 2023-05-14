@@ -2106,7 +2106,7 @@ class ClassNodeTest(ModuleLoader, unittest.TestCase):
         #   from the class that uses the metaclass, the value
         #   of the property
         property_meta = next(module["Metaclass"].igetattr("meta_property"))
-        self.assertIsInstance(property_meta, objects.Property)
+        self.assertIsInstance(property_meta, nodes.Property)
         wrapping = nodes.get_wrapping_class(property_meta)
         self.assertEqual(wrapping, module["Metaclass"])
 
@@ -2460,7 +2460,7 @@ def test_issue940_with_metaclass_class_context_property() -> None:
     )
     inferred = next(node.infer())
     assert not isinstance(inferred, nodes.List)
-    assert isinstance(inferred, objects.Property)
+    assert isinstance(inferred, nodes.Property)
 
 
 def test_issue940_metaclass_values_funcdef() -> None:
@@ -2517,7 +2517,7 @@ def test_issue940_metaclass_funcdef_is_not_datadescriptor() -> None:
     # class context, this should return the property object instead of
     # resolving the data descriptor
     inferred = next(node.infer())
-    assert isinstance(inferred, objects.Property)
+    assert isinstance(inferred, nodes.Property)
 
 
 def test_property_in_body_of_try() -> None:

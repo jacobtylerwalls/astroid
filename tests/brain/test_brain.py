@@ -1786,7 +1786,7 @@ class TestFunctoolsPartial:
         inferred = ast_node.func.inferred()
         assert len(inferred) == 1
         partial = inferred[0]
-        assert isinstance(partial, objects.PartialFunction)
+        assert isinstance(partial, nodes.PartialFunction)
         assert isinstance(partial.doc_node, nodes.Const)
         assert partial.doc_node.value == "Docstring"
         assert partial.lineno == 3

@@ -296,7 +296,7 @@ class EnumBrainTest(unittest.TestCase):
         assert isinstance(inferred, nodes.Const)
         assert inferred.pytype() == "builtins.str"
         inferred = next(c_name.infer())
-        assert isinstance(inferred, objects.Property)
+        assert isinstance(inferred, nodes.Property)
 
         # Inferring .value should not raise InferenceError. It is probably Uninferable
         # but we don't particularly care

@@ -26,6 +26,9 @@ Release date: TBA
 
 * Move ``LookupMixIn`` to ``astroid.nodes._base_nodes`` and make it private.
 
+* Move ``PartialFunction`` and ``Property`` to ``scoped_nodes``.
+  They inherited from ``FunctionDef`` anyway.
+
 * Reduce file system access in ``ast_from_file()``.
 
 * Reduce time to ``import astroid`` by delaying ``astroid_bootstrapping()`` until

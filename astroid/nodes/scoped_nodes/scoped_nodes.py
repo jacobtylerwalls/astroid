@@ -13,12 +13,13 @@ from __future__ import annotations
 import io
 import itertools
 import os
+import sys
 import warnings
 from collections.abc import Generator, Iterable, Iterator, Sequence
 from functools import cached_property, lru_cache
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn, TypeVar
 
-from astroid import bases, protocols, util
+from astroid import bases, decorators, objects, protocols, util
 from astroid.const import IS_PYPY, PY38, PY39_PLUS, PYPY_7_3_11_PLUS
 from astroid.context import (
     CallContext,
@@ -38,7 +39,7 @@ from astroid.exceptions import (
     TooManyLevelsError,
 )
 from astroid.interpreter.dunder_lookup import lookup
-from astroid.interpreter.objectmodel import ClassModel, FunctionModel, ModuleModel
+from astroid.interpreter.objectmodel import ClassModel, FunctionModel, ModuleModel, PropertyModel
 from astroid.manager import AstroidManager
 from astroid.nodes import Arguments, Const, NodeNG, Unknown, _base_nodes, node_classes
 from astroid.nodes.scoped_nodes.mixin import ComprehensionScope, LocalsDictNodeNG
@@ -50,6 +51,11 @@ from astroid.typing import (
     InferenceResult,
     SuccessfulInferenceResult,
 )
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 if TYPE_CHECKING:
     from astroid import nodes, objects
@@ -1487,21 +1493,19 @@ class FunctionDef(
 
     def _infer(
         self, context: InferenceContext | None = None, **kwargs: Any
-    ) -> Generator[objects.Property | FunctionDef, None, InferenceErrorInfo]:
-        from astroid import objects  # pylint: disable=import-outside-toplevel
-
+    ) -> Generator[Property | FunctionDef, None, InferenceErrorInfo]:
         if not self.decorators or not bases._is_property(self):
             yield self
             return InferenceErrorInfo(node=self, context=context)
 
-        # When inferring a property, we instantiate a new `objects.Property` object,
+        # When inferring a property, we instantiate a new `Property` object,
         # which in turn, because it inherits from `FunctionDef`, sets itself in the locals
         # of the wrapping frame. This means that every time we infer a property, the locals
         # are mutated with a new instance of the property. To avoid this, we detect this
         # scenario and avoid passing the `parent` argument to the constructor.
         parent_frame = self.parent.frame()
         property_already_in_parent_locals = self.name in parent_frame.locals and any(
-            isinstance(val, objects.Property) for val in parent_frame.locals[self.name]
+            isinstance(val, Property) for val in parent_frame.locals[self.name]
         )
         # We also don't want to pass parent if the definition is within a Try node
         if isinstance(
@@ -1510,7 +1514,7 @@ class FunctionDef(
         ):
             property_already_in_parent_locals = True
 
-        prop_func = objects.Property(
+        prop_func = Property(
             function=self,
             name=self.name,
             lineno=self.lineno,
@@ -1687,6 +1691,104 @@ class FunctionDef(
         :returns: The node itself.
         """
         return self
+
+
+class PartialFunction(FunctionDef):
+    """A class representing partial function obtained via functools.partial."""
+
+    @decorators.deprecate_arguments(doc="Use the postinit arg 'doc_node' instead")
+    def __init__(
+        self, call, name=None, doc=None, lineno=None, col_offset=None, parent=None
+    ):
+        # TODO: Pass end_lineno, end_col_offset and parent as well
+        super().__init__(
+            name,
+            lineno=lineno,
+            col_offset=col_offset,
+            parent=node_classes.Unknown(),
+            end_col_offset=0,
+            end_lineno=0,
+        )
+        # Assigned directly to prevent triggering the DeprecationWarning.
+        self._doc = doc
+        # A typical FunctionDef automatically adds its name to the parent scope,
+        # but a partial should not, so defer setting parent until after init
+        self.parent = parent
+        self.filled_args = call.positional_arguments[1:]
+        self.filled_keywords = call.keyword_arguments
+
+        wrapped_function = call.positional_arguments[0]
+        inferred_wrapped_function = next(wrapped_function.infer())
+        if isinstance(inferred_wrapped_function, PartialFunction):
+            self.filled_args = inferred_wrapped_function.filled_args + self.filled_args
+            self.filled_keywords = {
+                **inferred_wrapped_function.filled_keywords,
+                **self.filled_keywords,
+            }
+
+        self.filled_positionals = len(self.filled_args)
+
+    def infer_call_result(
+        self,
+        caller: SuccessfulInferenceResult | None,
+        context: InferenceContext | None = None,
+    ) -> Iterator[InferenceResult]:
+        if context:
+            assert (
+                context.callcontext
+            ), "CallContext should be set before inferring call result"
+            current_passed_keywords = {
+                keyword for (keyword, _) in context.callcontext.keywords
+            }
+            for keyword, value in self.filled_keywords.items():
+                if keyword not in current_passed_keywords:
+                    context.callcontext.keywords.append((keyword, value))
+
+            call_context_args = context.callcontext.args or []
+            context.callcontext.args = self.filled_args + call_context_args
+
+        return super().infer_call_result(caller=caller, context=context)
+
+    def qname(self) -> str:
+        return self.__class__.__name__
+
+
+class Property(FunctionDef):
+    """Class representing a Python property."""
+
+    @decorators.deprecate_arguments(doc="Use the postinit arg 'doc_node' instead")
+    def __init__(
+        self, function, name=None, doc=None, lineno=None, col_offset=None, parent=None
+    ):
+        self.function = function
+        super().__init__(
+            name,
+            lineno=lineno,
+            col_offset=col_offset,
+            parent=parent,
+            end_col_offset=function.end_col_offset,
+            end_lineno=function.end_lineno,
+        )
+        # Assigned directly to prevent triggering the DeprecationWarning.
+        self._doc = doc
+
+    special_attributes = PropertyModel()
+    type = "property"
+
+    def pytype(self) -> Literal["builtins.property"]:
+        return "builtins.property"
+
+    def infer_call_result(
+        self,
+        caller: SuccessfulInferenceResult | None,
+        context: InferenceContext | None = None,
+    ) -> NoReturn:
+        raise InferenceError("Properties are not callable")
+
+    def _infer(
+        self, context: InferenceContext | None = None, **kwargs: Any
+    ) -> Generator[Self, None, None]:
+        yield self
 
 
 class AsyncFunctionDef(FunctionDef):
@@ -2334,8 +2436,6 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
 
         :returns: An :class:`Instance` of the :class:`ClassDef` node
         """
-        from astroid import objects  # pylint: disable=import-outside-toplevel
-
         try:
             if any(cls.name in EXCEPTION_BASE_CLASSES for cls in self.mro()):
                 # Subclasses of exceptions can be exception instances
@@ -2417,8 +2517,6 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
         return attrs
 
     def _get_attribute_from_metaclass(self, cls, name, context):
-        from astroid import objects  # pylint: disable=import-outside-toplevel
-
         try:
             attrs = cls.getattr(name, context=context, class_context=True)
         except AttributeInferenceError:
@@ -2429,7 +2527,7 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
                 yield attr
                 continue
 
-            if isinstance(attr, objects.Property):
+            if isinstance(attr, Property):
                 yield attr
                 continue
             if attr.type == "classmethod":
@@ -2457,8 +2555,6 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
 
         :returns: The inferred possible values.
         """
-        from astroid import objects  # pylint: disable=import-outside-toplevel
-
         # set lookup name since this is necessary to infer on import nodes for
         # instance
         context = copy_context(context)
@@ -2490,7 +2586,7 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
                         yield inferred
                     else:
                         yield util.Uninferable
-                elif isinstance(inferred, objects.Property):
+                elif isinstance(inferred, Property):
                     function = inferred.function
                     if not class_context:
                         # Through an instance so we can solve the property

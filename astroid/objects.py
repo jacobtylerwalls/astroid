@@ -13,11 +13,11 @@ leads to an inferred FrozenSet:
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterator
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Any, Literal, NoReturn, TypeVar
+from typing import Any, Literal
 
-from astroid import bases, decorators, util
+from astroid import bases, util
 from astroid.context import InferenceContext
 from astroid.exceptions import (
     AttributeInferenceError,
@@ -29,8 +29,6 @@ from astroid.interpreter import objectmodel
 from astroid.manager import AstroidManager
 from astroid.nodes import node_classes, scoped_nodes
 from astroid.typing import InferenceResult, SuccessfulInferenceResult
-
-_T = TypeVar("_T")
 
 
 class FrozenSet(node_classes.BaseContainer):
@@ -198,7 +196,7 @@ class Super(node_classes.NodeNG):
                     yield inferred
                 elif self._class_based or inferred.type == "staticmethod":
                     yield inferred
-                elif isinstance(inferred, Property):
+                elif isinstance(inferred, scoped_nodes.Property):
                     function = inferred.function
                     try:
                         yield from function.infer_call_result(
@@ -273,104 +271,6 @@ class DictValues(bases.Proxy):
     __repr__ = node_classes.NodeNG.__repr__
 
 
-class PartialFunction(scoped_nodes.FunctionDef):
-    """A class representing partial function obtained via functools.partial."""
-
-    @decorators.deprecate_arguments(doc="Use the postinit arg 'doc_node' instead")
-    def __init__(
-        self, call, name=None, doc=None, lineno=None, col_offset=None, parent=None
-    ):
-        # TODO: Pass end_lineno, end_col_offset and parent as well
-        super().__init__(
-            name,
-            lineno=lineno,
-            col_offset=col_offset,
-            parent=node_classes.Unknown(),
-            end_col_offset=0,
-            end_lineno=0,
-        )
-        # Assigned directly to prevent triggering the DeprecationWarning.
-        self._doc = doc
-        # A typical FunctionDef automatically adds its name to the parent scope,
-        # but a partial should not, so defer setting parent until after init
-        self.parent = parent
-        self.filled_args = call.positional_arguments[1:]
-        self.filled_keywords = call.keyword_arguments
-
-        wrapped_function = call.positional_arguments[0]
-        inferred_wrapped_function = next(wrapped_function.infer())
-        if isinstance(inferred_wrapped_function, PartialFunction):
-            self.filled_args = inferred_wrapped_function.filled_args + self.filled_args
-            self.filled_keywords = {
-                **inferred_wrapped_function.filled_keywords,
-                **self.filled_keywords,
-            }
-
-        self.filled_positionals = len(self.filled_args)
-
-    def infer_call_result(
-        self,
-        caller: SuccessfulInferenceResult | None,
-        context: InferenceContext | None = None,
-    ) -> Iterator[InferenceResult]:
-        if context:
-            assert (
-                context.callcontext
-            ), "CallContext should be set before inferring call result"
-            current_passed_keywords = {
-                keyword for (keyword, _) in context.callcontext.keywords
-            }
-            for keyword, value in self.filled_keywords.items():
-                if keyword not in current_passed_keywords:
-                    context.callcontext.keywords.append((keyword, value))
-
-            call_context_args = context.callcontext.args or []
-            context.callcontext.args = self.filled_args + call_context_args
-
-        return super().infer_call_result(caller=caller, context=context)
-
-    def qname(self) -> str:
-        return self.__class__.__name__
-
-
 # TODO: Hack to solve the circular import problem between node_classes and objects
 # This is not needed in 2.0, which has a cleaner design overall
 node_classes.Dict.__bases__ = (node_classes.NodeNG, DictInstance)
-
-
-class Property(scoped_nodes.FunctionDef):
-    """Class representing a Python property."""
-
-    @decorators.deprecate_arguments(doc="Use the postinit arg 'doc_node' instead")
-    def __init__(
-        self, function, name=None, doc=None, lineno=None, col_offset=None, parent=None
-    ):
-        self.function = function
-        super().__init__(
-            name,
-            lineno=lineno,
-            col_offset=col_offset,
-            parent=parent,
-            end_col_offset=function.end_col_offset,
-            end_lineno=function.end_lineno,
-        )
-        # Assigned directly to prevent triggering the DeprecationWarning.
-        self._doc = doc
-
-    special_attributes = objectmodel.PropertyModel()
-    type = "property"
-
-    def pytype(self) -> Literal["builtins.property"]:
-        return "builtins.property"
-
-    def infer_call_result(
-        self,
-        caller: SuccessfulInferenceResult | None,
-        context: InferenceContext | None = None,
-    ) -> NoReturn:
-        raise InferenceError("Properties are not callable")
-
-    def _infer(
-        self: _T, context: InferenceContext | None = None, **kwargs: Any
-    ) -> Generator[_T, None, None]:
-        yield self
