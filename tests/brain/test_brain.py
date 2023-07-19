@@ -15,7 +15,7 @@ import astroid
 from astroid import MANAGER, builder, nodes, objects, test_utils, util
 from astroid.bases import Instance
 from astroid.brain.brain_namedtuple_enum import _get_namedtuple_fields
-from astroid.const import PY312_PLUS
+from astroid.const import PY39_PLUS, PY312_PLUS
 from astroid.exceptions import (
     AttributeInferenceError,
     InferenceError,
@@ -1926,25 +1926,16 @@ def test_http_client_brain() -> None:
     assert isinstance(inferred, astroid.Instance)
 
 
-def test_http_status_brain() -> None:
+@pytest.mark.skipif(not PY39_PLUS, reason="Added in Py3.9")
+def test_http_client_teapot() -> None:
     node = astroid.extract_node(
         """
-    import http
-    http.HTTPStatus.CONTINUE.phrase
+    from http.client import IM_A_TEAPOT
+    IM_A_TEAPOT
     """
     )
     inferred = next(node.infer())
-    # Cannot infer the exact value but the field is there.
-    assert inferred.value == ""
-
-    node = astroid.extract_node(
-        """
-    import http
-    http.HTTPStatus(200).phrase
-    """
-    )
-    inferred = next(node.infer())
-    assert isinstance(inferred, astroid.Const)
+    assert isinstance(inferred, astroid.Instance)
 
 
 def test_http_status_brain_iterable() -> None:

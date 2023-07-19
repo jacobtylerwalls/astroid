@@ -396,14 +396,24 @@ INT_FLAG_ADDITION_METHODS = """
 
 def infer_enum_class(node: nodes.ClassDef) -> nodes.ClassDef:
     """Specific inference for enums."""
-    for basename in (b for cls in node.mro() for b in cls.basenames):
+    basenames = []
+    for cls in node.mro():
+        for base in cls.bases:
+            if isinstance(base, nodes.ClassDef):
+                basenames.append(base.name)
+            else:
+                basenames.append(base.as_string())
+    for basename in basenames:
         if node.root().name == "enum":
             # Skip if the class is directly from enum module.
             break
         dunder_members = {}
         target_names = set()
         for local, values in node.locals.items():
-            if any(not isinstance(value, nodes.AssignName) for value in values):
+            if any(
+                not isinstance(value, (nodes.AssignName, nodes.FunctionDef))
+                for value in values
+            ):
                 continue
 
             stmt = values[0].statement()
@@ -414,11 +424,22 @@ def infer_enum_class(node: nodes.ClassDef) -> nodes.ClassDef:
                     targets = stmt.targets
             elif isinstance(stmt, nodes.AnnAssign):
                 targets = [stmt.target]
+            elif isinstance(stmt, nodes.FunctionDef):
+                targets = []
+                for body_stmt in stmt.body:
+                    if isinstance(body_stmt, nodes.Assign) and isinstance(
+                        body_stmt.targets[0], nodes.AssignAttr
+                    ):
+                        # Assume the assignment is to the newly constructed instance
+                        targets.append(body_stmt.targets[0].expr)
             else:
                 continue
 
             inferred_return_value = None
-            if stmt.value is not None:
+            if (
+                isinstance(stmt, (nodes.Assign, nodes.AnnAssign))
+                and stmt.value is not None
+            ):
                 if isinstance(stmt.value, nodes.Const):
                     if isinstance(stmt.value.value, str):
                         inferred_return_value = repr(stmt.value.value)
@@ -459,8 +480,21 @@ def infer_enum_class(node: nodes.ClassDef) -> nodes.ClassDef:
                     AstroidManager(), apply_transforms=False
                 ).string_build(classdef)[target.name]
                 fake.parent = target.parent
-                for method in node.mymethods():
-                    fake.locals[method.name] = [method]
+                for key in node.keys():
+                    try:
+                        value = node[key]
+                    except IndexError:
+                        fake.locals[key] = nodes.Name(
+                            name=key,
+                            lineno=-1,
+                            col_offset=-1,
+                            parent=fake,
+                            end_lineno=-1,
+                            end_col_offset=-1,
+                        )
+                    else:
+                        if isinstance(value, nodes.FunctionDef):
+                            fake.locals[value.name] = [value]
                 new_targets.append(fake.instantiate_class())
                 dunder_members[local] = fake
             node.locals[local] = new_targets
@@ -642,6 +676,15 @@ def _get_namedtuple_fields(node: nodes.Call) -> str:
 
 def _is_enum_subclass(cls: astroid.ClassDef) -> bool:
     """Return whether cls is a subclass of an Enum."""
+    if cls.decorators:
+        for decorator in cls.decorators.nodes:
+            if (
+                isinstance(decorator, nodes.Call)
+                and isinstance(decorator.func, nodes.Name)
+                and decorator.func.name == "_simple_enum"
+            ):
+                cls.bases += decorator.args
+                return True
     try:
         return any(
             klass.name in ENUM_BASE_NAMES

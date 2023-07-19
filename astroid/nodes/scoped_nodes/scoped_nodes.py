@@ -2216,7 +2216,8 @@ class ClassDef(  # pylint: disable=too-many-instance-attributes
 
     @property
     def basenames(self):
-        """The names of the parent classes
+        """The string representation of the parent classes. This may
+        or may not be a name.
 
         Names are given in the order they appear in the class definition.
 

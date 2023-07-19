@@ -137,7 +137,7 @@ class LocalsDictNodeNG(_base_nodes.LookupMixIn):
         self.set_local(name or child_node.name, child_node)  # type: ignore[attr-defined]
 
     def __getitem__(self, item: str) -> SuccessfulInferenceResult:
-        """The first node the defines the given local.
+        """The first node that defines the given local.
 
         :param item: The name of the locally defined object.
 
