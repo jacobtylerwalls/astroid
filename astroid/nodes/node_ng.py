@@ -150,7 +150,8 @@ class NodeNG:
                     context,
                     **kwargs,
                 ):
-                    context.nodes_inferred += 1
+                    if result is not util.Uninferable:
+                        context.nodes_inferred += 1
                     yield result
                 return
             except UseInferenceDefault:
@@ -173,7 +174,8 @@ class NodeNG:
                 break
             results.append(result)
             yield result
-            context.nodes_inferred += 1
+            if result is not util.Uninferable:
+                context.nodes_inferred += 1
 
         # Cache generated results for subsequent inferences of the
         # same node using the same context
