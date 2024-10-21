@@ -5,6 +5,6 @@ on:
 
 jobs:
   test-pylint-with-astroid-sha:
-    uses: jacobtylerwalls/pylint/.github/workflows/tests.yaml@2dd82ce6667af097fbd08a79ff35271c9fa2b07e
+    uses: jacobtylerwalls/pylint/.github/workflows/tests.yaml@bc008ad3a29a3cb2c7e93a07e0b9b584cf0845e6
     with:
       astroid_sha: ${{ github.event.workflow_run.head_sha }}
