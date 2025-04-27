@@ -1,0 +1,10 @@
+name: Test pylint
+
+on:
+  pull_request: ~
+
+jobs:
+  test-pylint-with-astroid-sha:
+    uses: jacobtylerwalls/pylint/.github/workflows/tests.yaml@bc008ad3a29a3cb2c7e93a07e0b9b584cf0845e6
+    with:
+      astroid_sha: ${{ github.event.pull_request.head_sha }}
