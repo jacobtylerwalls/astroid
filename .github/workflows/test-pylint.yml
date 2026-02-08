@@ -8,4 +8,4 @@ jobs:
     uses: jacobtylerwalls/pylint/.github/workflows/tests.yaml@run-with-custom-astroid
     with:
       repository: pylint-dev/pylint
-      astroid_sha: ${{ github.event.pull_request.head.sha }}
+      astroid_sha: ${{ github.sha }}
